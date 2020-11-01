@@ -20,6 +20,8 @@
     "typescript": "^4.0.5"
   },
   "dependencies": {
+    "rxjs": "^6.6.3",
+    "ts-node": "^9.0.0",
     "tsc": "^1.20150623.0"
   }
 }
