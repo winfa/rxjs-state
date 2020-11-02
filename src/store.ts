@@ -1,31 +1,54 @@
 import { Observable, Subject } from "rxjs";
-import { mergeMap, scan } from "rxjs/operators";
+import { scan } from "rxjs/operators";
+import { BehaviorSubject } from "rxjs/internal/BehaviorSubject";
 
-class Store {
-  private _action$ = new Subject<string>();
-  private _state$: Observable<State>;
+export class Store {
+  state$: Observable<State>;
 
-  constructor(initialState: State) {
-    this._state$ = this._action$.pipe(
-      scan(reducer, initialState),
-    );
+  private _state$: BehaviorSubject<State>;
+  private _action$ = new Subject<Action>();
+
+  constructor(stateReducer: StateReducer<State>) {
+    this._state$ = new BehaviorSubject<State>(stateReducer.state);
+    this.state$ = this._state$.asObservable();
+    this._action$.pipe(scan(stateReducer.reducer, stateReducer.state)).subscribe(this._state$);
   }
 
-  dispatch(action: string) {
+  get state() {
+    return this._state$.value;
+  }
+
+  dispatch(action: Action) {
     this._action$.next(action);
   }
+}
 
+export function createReducer<TState>(initialState: TState, reducer: Reducer<TState>): StateReducer<TState> {
+  return {
+    state: initialState,
+    reducer,
+  };
+}
+
+export function createAction(name: string, props: { [key: string]: any }) {
+  return {
+    name,
+    payload: props
+  };
+}
+
+export interface State {
 
 }
 
-const reducer = (state: State, action: string) => {
-  if (action === 'xxxx') {
-    return state;
-  }
-
-  return state;
+export interface StateReducer<TState> {
+  state: TState;
+  reducer: Reducer<TState>;
 }
 
-interface State {
-  [key: string]: any;
+export interface Action {
+  name: string,
+  payload: { [key: string]: any };
 }
+
+export type Reducer<T> = (state: T, action: Action) => T;
